@@ -1,6 +1,6 @@
 name: Email Fetcher
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
   schedule:
     - cron: "30 11 * * *"  # 7:30 AM EST (12:30 UTC)
 
@@ -9,15 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
       - name: Install dependencies
-        run: pip install yagmail
-
+        run: pip install pyzmail36  # For email parsing
       - name: Run email fetcher
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
