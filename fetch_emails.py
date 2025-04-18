@@ -21,20 +21,27 @@ def fetch_recent_emails():
         raw_email = msg_data[0][1]
         msg = email.message_from_bytes(raw_email)
 
-        print(f"\nSubject: {msg['subject']}")
-        print(f"From: {msg['from']}")
-        print(f"Date: {msg['date']}")
-
-        # Get email body
+        # Print bold & underlined subject
+        print("\n\033[1;4m" + msg['subject'] + "\033[0m")  # Bold underline formatting
+        
+        # Get and print body text
+        body = ""
         if msg.is_multipart():
             for part in msg.walk():
                 if part.get_content_type() == "text/plain":
-                    print(f"Body: {part.get_payload(decode=True).decode()[:200]}...")
+                    body = part.get_payload(decode=True).decode()
                     break
         else:
-            print(f"Body: {msg.get_payload(decode=True).decode()[:200]}...")
+            body = msg.get_payload(decode=True).decode()
+        
+        print("\n" + body.strip() + "\n")
+        print("-" * 50)  # Separator line
 
     mail.close()
+    mail.logout()
+
+if __name__ == "__main__":
+    fetch_recent_emails()
     mail.logout()
 
 if __name__ == "__main__":
