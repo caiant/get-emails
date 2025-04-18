@@ -1,31 +1,41 @@
-import yagmail
+import imaplib
+import email
 from datetime import datetime, timedelta
 import os
 
 def fetch_recent_emails():
-    # Authenticate (using environment variables)
-    yag = yagmail.SMTP(
-        user=os.getenv("GMAIL_ADDRESS"),
-        password=os.getenv("GMAIL_APP_PASSWORD"),  # Use App Password if 2FA enabled
-        host="smtp.gmail.com"
-    )
+    # Connect to IMAP server
+    mail = imaplib.IMAP4_SSL("imap.gmail.com")
+    mail.login(os.getenv("GMAIL_ADDRESS"), os.getenv("GMAIL_APP_PASSWORD"))
+    mail.select("inbox")
 
-    # Calculate 24 hours ago
+    # Calculate date 24 hours ago
     since_date = (datetime.now() - timedelta(days=1)).strftime("%d-%b-%Y")
 
-    # Fetch emails
-    emails = yag.inbox(
-        label="INBOX",
-        since=since_date,
-        limit=20  # Adjust as needed
-    )
+    # Search for emails since yesterday
+    status, messages = mail.search(None, f'(SINCE "{since_date}")')
+    email_ids = messages[0].split()
 
-    # Process results
-    for email in emails:
-        print(f"\nSubject: {email['subject']}")
-        print(f"From: {email['from']}")
-        print(f"Date: {email['date']}")
-        print(f"Body Preview: {email['body'][:200]}...")  # First 200 chars
+    for e_id in email_ids:
+        _, msg_data = mail.fetch(e_id, "(RFC822)")
+        raw_email = msg_data[0][1]
+        msg = email.message_from_bytes(raw_email)
+
+        print(f"\nSubject: {msg['subject']}")
+        print(f"From: {msg['from']}")
+        print(f"Date: {msg['date']}")
+
+        # Get email body
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_type() == "text/plain":
+                    print(f"Body: {part.get_payload(decode=True).decode()[:200]}...")
+                    break
+        else:
+            print(f"Body: {msg.get_payload(decode=True).decode()[:200]}...")
+
+    mail.close()
+    mail.logout()
 
 if __name__ == "__main__":
     fetch_recent_emails()
